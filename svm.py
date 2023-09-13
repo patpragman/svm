@@ -1,8 +1,7 @@
 #  Logistic Regression Model using sci-kit learn
-from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
 from sklearn.metrics import classification_report
-from sklearn.model_selection import train_test_split
-import wandb
+from sklearn.model_selection import train_test_split, GridSearchCV
 import numpy as np
 from skimage import color, io
 import os
@@ -10,12 +9,6 @@ import pickle
 from cm_handler import display_and_save_cm
 from pprint import pformat
 from pathlib import Path
-
-# start up wandb!
-
-wandb.init(
-    project="Elodea LogReg", notes="trying to build the classifier with logistic regression, testing all the images",
-)
 
 sizes = [1024, 512, 256, 224, 128, 64]
 sizes.reverse()  # start with the smaller problem
@@ -25,17 +18,16 @@ if os.path.isfile(results_filename):
     os.remove(results_filename)  # delete the old one, make a new one!
 
 with open(results_filename, "w") as results_file:
-    results_file.write("# Results for Logistic Regression:\n")
+    results_file.write("# Results for SVM:\n")
 
 folder_paths = [f"{Path.home()}/tx_data/data_{size}" for size in sizes]
 for size, dataset_path in zip(sizes, folder_paths):
-    wandb.log({"msg": f"Logistic Regression Model for {size} x {size} images"})
+    print(pformat({"msg": f"SVM Model for {size} x {size} images"}))
 
     # variables to hold our data
     data = []
     Y = []
 
-    classifier = LogisticRegression(class_weight='balanced', max_iter=3000)
     classes = os.listdir(dataset_path)
 
     if ".DS_Store" in classes:
@@ -74,29 +66,50 @@ for size, dataset_path in zip(sizes, folder_paths):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25,
                                                         random_state=42)  # for consistency
 
-    # now fit the classifier
-    # fit the model with data
-    classifier.fit(X_train, y_train)
-    y_pred = classifier.predict(X_test)
+    # grid search through the values
+    # Define a parameter grid for hyperparameter tuning
+    param_grid = {
+        'C': [1, 10, 100],
+        'kernel': ['linear', 'rbf', 'poly'],
+        'gamma': [0.001, 0.01, 0.1],
+    }
+
+    # Create an SVM classifier
+    svm_classifier = SVC()
+
+    # Perform a grid search with cross-validation
+    grid_search = GridSearchCV(estimator=svm_classifier,
+                               param_grid=param_grid,
+                               cv=3, n_jobs=-1, verbose=2)
+    grid_search.fit(X_train, y_train)
+
+    # Get the best hyperparameters
+    best_params = grid_search.best_params_
+    print("Best Hyperparameters:", best_params)
+
+    # Train an SVM classifier with the best hyperparameters
+    best_svm_classifier = SVC(**best_params)
+    best_svm_classifier.fit(X_train, y_train)
+
+    y_pred = best_svm_classifier.predict(X_test)
 
     cr = classification_report(
         y_test, y_pred, target_names=[key for key in mapping.keys()], output_dict=True
     )
 
-    wandb.log(cr)
     # save it
     with open(f"{dataset_path}/log_reg_{size}.pkl", "wb") as file:
-        pickle.dump(classifier, file)
+        pickle.dump(best_svm_classifier, file)
 
     display_and_save_cm(
         y_actual=y_test, y_pred=y_pred, labels=[key for key in mapping.keys()],
-        name=f"Logistic Regression Image Size {size}x{size}"
+        name=f"SVM For Image Size {size}x{size}"
     )
 
-    wandb.log({"msg": f"{size}x{size} complete!"})
+    print(pformat({"msg": f"{size}x{size} complete!"}))
 
     for d in [cr[k] for k in mapping.keys()]:
-        wandb.log(d)
+        print(pformat(d))
 
     with open(results_filename, "a") as outfile:
         outfile.write(f"{size}x{size} images\n")
