@@ -7,7 +7,9 @@ def display_and_save_cm(y_actual=np.arange(5),
                         y_pred=np.arange(5),
                         name="Default Confusion Matrix Chart!",
                         labels=[f"Value = {i}" for i in range(0, 5)],
-                        display_only=False):
+                        output_path="default_confusion_matrix.png",
+                        save_fig=False, show_fig=False,
+                        ):
 
     rcParams.update({'figure.autolayout': True})  # set rcParams to autoformat
 
@@ -20,9 +22,11 @@ def display_and_save_cm(y_actual=np.arange(5),
     ax.set_xticklabels(labels, rotation=45)
 
     plt.title(name)
-    if not display_only:
-        plt.savefig(f"{name.replace(' ', '_')}.png")
-    plt.show()
+    if save_fig:
+        plt.savefig(output_path)
+
+    if show_fig:
+        plt.show()
 
     rcParams.update({'figure.autolayout': False})  # undo the param set
 
