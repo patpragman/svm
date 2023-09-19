@@ -22,8 +22,12 @@ parser.add_argument("--quiet", default=False, action="store_true")
 if __name__ == "__main__":
     args = parser.parse_args()
 
-    sizes = [512, 256, 224, 128, 64] if args.specific_size < 0 else [args.specific_size]
-    sizes.reverse()  # start with the smaller problem
+
+    if args.specific_size < 0:
+        sizes = [512, 256, 224, 128, 64]
+    else:
+        sizes = [args.specific_size]
+
 
     results_filename = f'{args.target_path}/results.md'
     if os.path.isfile(results_filename):
@@ -65,12 +69,17 @@ if __name__ == "__main__":
 
             for file in files:
                 if ".JPEG" in file.upper() or ".JPG" in file.upper() or ".PNG" in file.upper():
-                    key = root.split("/")[-1]
-                    img = io.imread(f"{root}/{file}", as_gray=True)
-                    arr = np.asarray(img).reshape(size * size, )  # reshape into an array
-                    data.append(arr)
 
-                    Y.append(encoder(key))  # simple one hot encoding
+                    key = root.split("/")[-1]
+                    if "cm" in file:
+                        continue
+                    else:
+                        img = io.imread(f"{root}/{file}", as_gray=True)
+
+                        arr = np.asarray(img).reshape(size * size, )  # reshape into an array
+                        data.append(arr)
+
+                        Y.append(encoder(key))  # simple one hot encoding
 
         y = np.array(Y)
         X = np.array(data)
