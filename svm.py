@@ -9,11 +9,11 @@ import pickle
 from cm_handler import display_and_save_cm
 from pprint import pformat
 from pathlib import Path
-
+HOME_DIRECTORY = Path.home()
 import argparse
 parser = argparse.ArgumentParser(description="SVM Classifier Trainer Command Line Script!")
 parser.add_argument("--target_path",
-                    default="/home/patrickpragman/PycharmProjects/models/data_manufacturer/0.35_reduced_then_balanced",
+                    default=f"{HOME_DIRECTORY}/data/0.35_reduced_then_balanced",
                     type=str)
 parser.add_argument("--specific_size", default=-1, type=int)
 parser.add_argument("--seed", default=42, type=int)
